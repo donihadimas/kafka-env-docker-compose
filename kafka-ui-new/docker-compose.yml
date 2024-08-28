@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  kafka-new:
+    image: bitnami/kafka:latest
+    container_name: kafka-new
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka-new:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      KAFKA_LISTENER_NAME: INSIDE
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-new:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    depends_on:
+      - zookeeper-new
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - kafka-net
+    restart: unless-stopped  
+
+  zookeeper-new:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper-new
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    networks:
+      - kafka-net
+
+  kafka-ui:
+    container_name: kafka-ui-new
+    image: provectuslabs/kafka-ui:latest
+    volumes:
+      - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
+    ports:
+      - 8888:8080
+    depends_on:
+      - kafka-new
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - kafka-net
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8888 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  kafka-net:
+    driver: bridge
+
+volumes:
+  kafka_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: D:\MyProject\kafka-env-docker-compose\kafka-ui-new\kafka-data

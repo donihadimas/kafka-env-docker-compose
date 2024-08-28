@@ -1,0 +1,97 @@
+version: "3.8"
+
+x-kafka-common: &kafka-common
+  image: "bitnami/kafka:latest"
+  networks:
+    - kafka
+  healthcheck:
+    test: 'bash -c ''printf "" > /dev/tcp/127.0.0.1/9092; exit $$?;'''
+    interval: 5s
+    timeout: 10s
+    retries: 3
+    start_period: 30s
+  # restart: unless-stopped
+
+# x-kafka-env-common: &kafka-env-common
+#   ALLOW_PLAINTEXT_LISTENER: "yes"
+#   KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+#   KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka-1:9093,1@kafka-2:9093
+#   KAFKA_KRAFT_CLUSTER_ID: abcdefghijklmnopqrstuv
+#   KAFKA_CFG_PROCESS_ROLES: controller,broker
+#   KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#   KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+#   EXTRA_ARGS: "-Xms128m -Xmx256m"
+#   # Uncomment the following line if you need to increase memory for higher load
+#   # EXTRA_ARGS: "-Xms1g -Xmx2g"
+
+x-kafka-env-common: &kafka-env-common
+  ALLOW_PLAINTEXT_LISTENER: "yes"
+  KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+  KAFKA_CFG_PROCESS_ROLES: broker,controller
+  KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+  KAFKA_CFG_LISTENER_NAMES: PLAINTEXT,CONTROLLER
+  KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  KAFKA_CFG_KRAFT_CLUSTER_ID: kraft-tap-mm # ID kluster Kafka Raft
+  KAFKA_CFG_KRAFT_MODE: "true" # Mengaktifkan KRaft mode
+  KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093 # Hanya satu broker sebagai pemilih kuorum
+  EXTRA_ARGS: "-Xms1g -Xmx2g"
+
+services:
+  kafka:
+    <<: *kafka-common
+    ports:
+      - "9092:9092" # Mapping broker 1 to port 9093 on the host
+    environment:
+      <<: *kafka-env-common
+      KAFKA_CFG_NODE_ID: 0
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+
+  # kafka-2:
+  #   <<: *kafka-common
+  #   ports:
+  #     - "9094:9092"  # Mapping broker 2 to port 9094 on the host
+  #   environment:
+  #     <<: *kafka-env-common
+  #     KAFKA_CFG_NODE_ID: 1
+  #   volumes:
+  #     - kafka_2_data:/bitnami/kafka
+
+  kafka-ui-login:
+    container_name: kafka-ui-login
+    image: provectuslabs/kafka-ui:latest
+    volumes:
+      - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      - kafka
+      # - kafka-2
+    networks:
+      - kafka
+    ports:
+      - "8888:8080"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8888 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  kafka:
+    driver: bridge
+
+volumes:
+  kafka_1_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: D:\MyProject\kafka-env-docker-compose\kafka-kafka-ui-login\kafka-cluster\kafka-volume\kafka-1-data
+  # kafka_2_data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: D:\MyProject\kafka-env-docker-compose\kafka-kafka-ui-login\kafka-cluster\kafka-volume\kafka-2-data

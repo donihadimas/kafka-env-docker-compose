@@ -1,0 +1,12 @@
+auth:
+  type: LOGIN_FORM
+
+spring:
+  security:
+    user:
+      name: admin
+      password: admin
+kafka:
+  clusters:
+    - bootstrapServers: kafka-new:9093
+      name: kafka

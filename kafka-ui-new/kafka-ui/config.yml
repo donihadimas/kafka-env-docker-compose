@@ -1,6 +1,5 @@
 auth:
   type: LOGIN_FORM
-
 spring:
   security:
     user:
@@ -10,3 +9,8 @@ kafka:
   clusters:
     - bootstrapServers: kafka-new:9093
       name: kafka
+      properties: {}
+      readOnly: false
+rbac:
+  roles: []
+webclient: {}

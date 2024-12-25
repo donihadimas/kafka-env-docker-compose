@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   kafka-new:
     image: bitnami/kafka:latest
@@ -18,8 +16,8 @@ services:
       - "9093:9093"
     depends_on:
       - zookeeper-new
-    volumes:
-      - kafka_data:/bitnami/kafka
+    # volumes:
+    #   - kafka_data:/bitnami/kafka
     networks:
       - kafka-net
     restart: unless-stopped
@@ -33,20 +31,22 @@ services:
       ALLOW_ANONYMOUS_LOGIN: "yes"
     networks:
       - kafka-net
-    volumes:
-      - zookeeper_data:/bitnami/zookeeper
+    # volumes:
+    #   - zookeeper_data:/bitnami/zookeeper
 
   kafka-ui:
     container_name: kafka-ui-new
     image: provectuslabs/kafka-ui:latest
-    volumes:
-      - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
+    # volumes:
+    #   - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
     ports:
       - 8888:8080
     depends_on:
       - kafka-new
     environment:
       DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: "kafka-new-cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka-new:9093"
     networks:
       - kafka-net
     healthcheck:
@@ -59,17 +59,16 @@ services:
 networks:
   kafka-net:
     driver: bridge
-
-volumes:
-  kafka_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: D:\MyProject\kafka-env-docker-compose\kafka-ui-new\kafka-data
-  zookeeper_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: D:\MyProject\kafka-env-docker-compose\kafka-ui-new\zookeeper-data
+# volumes:
+# kafka_data:
+#   driver: local
+#   driver_opts:
+#     type: none
+#     o: bind
+#     device: D:\MyProject\kafka-env-docker-compose\kafka-ui-new\kafka-data
+# zookeeper_data:
+#   driver: local
+#   driver_opts:
+#     type: none
+#     o: bind
+#     device: D:\MyProject\kafka-env-docker-compose\kafka-ui-new\zookeeper-data
